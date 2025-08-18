@@ -6,12 +6,15 @@
 #include "opentelemetry/context/propagation/global_propagator.h"
 #include "opentelemetry/context/propagation/text_map_propagator.h"
 
+#include "opentelemetry/exporters/ostream/span_exporter.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"
 
 #include "opentelemetry/exporters/otlp/otlp_http.h"
+#include "opentelemetry/exporters/otlp/otlp_http_exporter.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
 #include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
 
+#include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_options.h"
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
 
@@ -32,10 +35,16 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
+#include <concepts>
 
 using grpc::ClientContext;
 using grpc::ServerContext;
+namespace trace_sdk = opentelemetry::sdk::trace;
+
+const uint16_t nDefaultGrpcCollector = 4317;
+const uint16_t nDefaultHttpCollector = 4318;
 
 namespace
 {
@@ -85,57 +94,94 @@ public:
   ServerContext *context_ = nullptr;
 };
 
-//void InitTracer_console()
-void InitTracer_console()
-{
-  auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
-  auto processor =
-      opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
-  std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
-  processors.push_back(std::move(processor));
-  // Default is an always-on sampler.
-  std::unique_ptr<opentelemetry::sdk::trace::TracerContext> context =
-      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
-  std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-      opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
-  // Set the global trace provider
-  opentelemetry::sdk::trace::Provider::SetTracerProvider(provider);
+//auto build_console_processor()
+//{
+//  auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
+//  auto processor =
+//      trace_sdk::SimpleSpanProcessorFactory::Create(std::move(exporter));
+//  return processor;
+//}
 
-  // set global propagator
-  opentelemetry::context::propagation::GlobalTextMapPropagator::SetGlobalPropagator(
-      opentelemetry::nostd::shared_ptr<opentelemetry::context::propagation::TextMapPropagator>(
-          new opentelemetry::trace::propagation::HttpTraceContext()));
+template<typename ExporterT, typename ExporterOptionsT>
+auto build_processor(uint16_t port = 0) {
+
+  auto exporter_fnc = []<typename T>(uint16_t port) {
+    if constexpr(std::same_as<T, opentelemetry::exporter::otlp::OtlpHttpExporterOptions>) {
+      if ( 0 == port ) {
+        port = nDefaultHttpCollector;
+      }
+
+      opentelemetry::exporter::otlp::OtlpHttpExporterOptions opts;
+      opts.url                             = "http://localhost:" + std::to_string(port) + "/v1/traces";
+      opts.retry_policy_max_attempts       = 5;
+      opts.retry_policy_initial_backoff    = std::chrono::duration<float>{0.1f};
+      opts.retry_policy_max_backoff        = std::chrono::duration<float>{5.0f};
+      opts.retry_policy_backoff_multiplier = 1.0f;
+      auto exporter = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(opts);
+
+      return exporter;
+    } else if constexpr(std::same_as<T, opentelemetry::exporter::otlp::OtlpGrpcExporterOptions>) {
+      if ( 0 == port ) {
+        port = nDefaultGrpcCollector;
+      }
+
+      opentelemetry::exporter::otlp::OtlpGrpcExporterOptions opts;
+      opts.endpoint = "localhost:" + std::to_string(port);
+      opts.use_ssl_credentials = false;
+      //opts.use_ssl_credentials = true;
+      //opts.ssl_credentials_cacert_as_string = "ssl-certificate";
+      auto exporter = opentelemetry::exporter::otlp::OtlpGrpcExporterFactory::Create(opts);
+
+      return exporter;
+    } else {
+      throw std::runtime_error("Unhandled (second) template parameter.");
+    }
+  };
+
+  auto processor_fnc = [&]<typename T>() {
+    if constexpr(std::same_as<T, opentelemetry::exporter::trace::OStreamSpanExporter>) {
+      auto exporter = opentelemetry::exporter::trace::OStreamSpanExporterFactory::Create();
+      auto processor =
+          trace_sdk::SimpleSpanProcessorFactory::Create(std::move(exporter));
+
+      return processor;
+    } else if constexpr(std::same_as<T, opentelemetry::exporter::otlp::OtlpHttpExporter> ||
+        std::same_as<T, opentelemetry::exporter::otlp::OtlpGrpcExporter>) {
+
+        auto exporter = exporter_fnc.template operator()<ExporterOptionsT>(port);
+        trace_sdk::BatchSpanProcessorOptions bspOpts;
+        auto processor = trace_sdk::BatchSpanProcessorFactory::Create(std::move(exporter), bspOpts);
+
+        return processor;
+    } else {
+      throw std::runtime_error("Unhandled (first) template parameter.");
+    }
+  };
+
+  return processor_fnc.template operator()<ExporterT>();
 }
 
-void initTracer_http(uint16_t port) {
-  //port = 4318;
-  opentelemetry::sdk::trace::BatchSpanProcessorOptions bspOpts{};
-  opentelemetry::exporter::otlp::OtlpHttpExporterOptions opts;
-  opts.url = "http://localhost:" + std::to_string(port) + "/v1/traces";
-  auto exporter  = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(opts);
-  auto processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), bspOpts);
-  std::shared_ptr<opentelemetry::trace::TracerProvider> provider = opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(processor));
-  opentelemetry::trace::Provider::SetTracerProvider(provider);
-}
+void InitTracer() {
+  std::vector<std::unique_ptr<trace_sdk::SpanProcessor>> processors;
+  processors.push_back(
+    std::move(build_processor<opentelemetry::exporter::trace::OStreamSpanExporter, void>()));
+  processors.push_back(
+    std::move(build_processor<opentelemetry::exporter::otlp::OtlpHttpExporter, 
+              opentelemetry::exporter::otlp::OtlpHttpExporterOptions>()
+              ));
+  processors.push_back(
+    std::move(build_processor<opentelemetry::exporter::otlp::OtlpGrpcExporter, 
+              opentelemetry::exporter::otlp::OtlpGrpcExporterOptions>()
+              ));
 
-void initTracer_gRPC(uint16_t port) {
-  opentelemetry::sdk::trace::BatchSpanProcessorOptions bspOpts{};
-  opentelemetry::exporter::otlp::OtlpGrpcExporterOptions opts;
-  opts.endpoint = "localhost:" + std::to_string(port);
-  opts.use_ssl_credentials = true;
-  opts.ssl_credentials_cacert_as_string = "ssl-certificate";
-  auto exporter  = opentelemetry::exporter::otlp::OtlpGrpcExporterFactory::Create(opts);
-  auto processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter), bspOpts);
-  std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-      opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(processor));
-  // Set the global trace provider
+  std::shared_ptr<opentelemetry::trace::TracerProvider> provider = trace_sdk::TracerProviderFactory::Create(std::move(processors));
   opentelemetry::trace::Provider::SetTracerProvider(provider);
 }
 
 void CleanupTracer()
 {
   std::shared_ptr<opentelemetry::trace::TracerProvider> none;
-  opentelemetry::sdk::trace::Provider::SetTracerProvider(none);
+  trace_sdk::Provider::SetTracerProvider(none);
 }
 
 opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer> get_tracer(std::string tracer_name)

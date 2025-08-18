@@ -3,6 +3,7 @@ project( instrumentation-playground )
 
 # Place CXX flags here or later ?
 set( CMAKE_CXX_FLAGS "-g3 -Wall" )
+set( CMAKE_CXX_STANDARD 20 )
 
 include("${instrumentation-playground_SOURCE_DIR}/cmake/curl.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/opentelemetry-cpp.cmake")
