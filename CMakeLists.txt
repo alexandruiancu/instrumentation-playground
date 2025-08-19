@@ -10,4 +10,5 @@ include("${instrumentation-playground_SOURCE_DIR}/cmake/opentelemetry-cpp.cmake"
 include("${instrumentation-playground_SOURCE_DIR}/cmake/grpc.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/protobuf.cmake")
 
+set(include_DIR "${instrumentation-playground_SOURCE_DIR}/include")
 add_subdirectory(src)
