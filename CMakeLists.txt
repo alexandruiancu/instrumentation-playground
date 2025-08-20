@@ -11,4 +11,18 @@ include("${instrumentation-playground_SOURCE_DIR}/cmake/grpc.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/protobuf.cmake")
 
 set(include_DIR "${instrumentation-playground_SOURCE_DIR}/include")
+
+########################################
+# zguide 
+#include C/zhelpers/h 
+#include C++/zhelpers/hpp)
+
+set(zguide_DIR "${instrumentation-playground_SOURCE_DIR}/../zguide")
+if(EXISTS "${zguide_DIR}")
+  set(zguide_FOUND 1)
+else()
+  set(zguide_FOUND 0)
+endif()
+########################################
+
 add_subdirectory(src)

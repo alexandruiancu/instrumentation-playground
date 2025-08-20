@@ -58,3 +58,5 @@ else()
 endif()
 
 add_subdirectory(grpc)
+# TODO: implement zmq example
+add_subdirectory(zmq)
