@@ -133,8 +133,6 @@ auto build_processor(uint16_t port = 0) {
       auto exporter = opentelemetry::exporter::otlp::OtlpGrpcExporterFactory::Create(opts);
 
       return exporter;
-    } else {
-      throw std::runtime_error("Unhandled (second) template parameter.");
     }
   };
 
@@ -153,8 +151,6 @@ auto build_processor(uint16_t port = 0) {
         auto processor = trace_sdk::BatchSpanProcessorFactory::Create(std::move(exporter), bspOpts);
 
         return processor;
-    } else {
-      throw std::runtime_error("Unhandled (first) template parameter.");
     }
   };
 
