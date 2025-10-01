@@ -1,4 +1,3 @@
-find_package(Crow)
 
 if(crow_FOUND)
    include_directories(${crow_INCLUDE_DIR})

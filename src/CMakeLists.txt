@@ -60,3 +60,4 @@ endif()
 add_subdirectory(grpc)
 # TODO: implement zmq example
 add_subdirectory(zmq)
+add_subdirectory(todoui-cpp)
