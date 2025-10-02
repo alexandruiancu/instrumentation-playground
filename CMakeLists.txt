@@ -2,8 +2,10 @@ cmake_minimum_required( VERSION 3.20 )
 project( instrumentation-playground )
 
 # Place CXX flags here or later ?
-set( CMAKE_CXX_FLAGS "-g3 -Wall" )
-set( CMAKE_CXX_STANDARD 20 )
+#set( CMAKE_CXX_FLAGS "-g3 -Wall" ) - not sure this is the right place
+set( CMAKE_CXX_STANDARD 23 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
+set( CMAKE_CXX_EXTENSIONS OFF )
 
 include("${instrumentation-playground_SOURCE_DIR}/cmake/curl.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/opentelemetry-cpp.cmake")
