@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   }
 
   crow::SimpleApp app;
-  CROW_ROUTE(app, "/html")([](){
+  CROW_ROUTE(app, "/")([](){
       // Simple get request and responce as html
       auto page = crow::mustache::load("index.html");
       return page.render();
