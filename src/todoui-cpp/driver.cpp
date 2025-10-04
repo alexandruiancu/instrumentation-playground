@@ -29,10 +29,18 @@ int main(int argc, char *argv[]) {
 
   crow::SimpleApp app;
   CROW_ROUTE(app, "/")([](){
-      // Simple get request and responce as html
       auto page = crow::mustache::load("index.html");
       return page.render();
   });
+  CROW_ROUTE(app, "/add").methods("POST"_method)(
+    [](const crow::request& req){
+      return crow::response{""};
+  });
+  CROW_ROUTE(app, "/delete").methods("POST"_method)(
+    [](const crow::request& req){
+      return crow::response{""};
+  });
+
   app.port(std::get<uint32_t>(app_config["PORT"])).multithreaded().run();
   return 0;
 }
