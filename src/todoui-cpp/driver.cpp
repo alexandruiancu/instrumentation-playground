@@ -65,16 +65,10 @@ int main(int argc, char *argv[]) {
         std::get<std::string>(app_config["BACKEND_URL"])
       );
 
-    auto cpr_resp = cpr::Get(cpr::Url{std::get<std::string>(app_config["BACKEND_URL"])});
-    auto todos = crow::json::load(cpr_resp.text);
-    //std::vector<crow::mustache::context> todos;
-    //crow::mustache::context t1;
-    //t1["todo"] = "Sample";
-    //todos.push_back(std::move(t1));
-    //crow::mustache::context ctx;
-    //ctx["todos"] = std::move(todos);
-    //return page.render(ctx);
-    return page.render(todos);
+      auto cpr_resp = cpr::Get(cpr::Url{std::get<std::string>(app_config["BACKEND_URL"])});
+      auto todos = crow::json::load(cpr_resp.text);
+
+      return page.render(todos);
   });
 
   CROW_ROUTE(app, "/add")

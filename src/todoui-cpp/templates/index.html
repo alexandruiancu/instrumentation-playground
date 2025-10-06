@@ -37,16 +37,16 @@
         </table>
     </div>
 
-    {% if todos %}
+    {{#todos}}
 
     <table class="w3-table-all w3-hoverable">
         <tr class="w3-teal">
             <th width="600px">Item</th>
             <th>Action</th>
         </tr>
-        {% for todo in todos %}
+        {{#todo}}
         <tr>
-            <td>{{ todo }}</td>
+            <td>{{todo}}</td>
             <td>
                 <form action="/delete" method="post">
                     <input type="hidden" id="todo" name="todo" value="{{ todo }}" />
@@ -54,11 +54,11 @@
                 </form>
             </td>
         </tr>
-        {% endfor %}
+        {{/todo}}
     </table>
-    
+    {{/todos}}
 
-    {% else %}
+    {{^todos}}
 
     <table class="w3-table-all w3-hoverable">
         <tr class="w3-teal">
@@ -71,6 +71,6 @@
         </tr>
     </table>
 
-    {% endif %}
+    {{/todos}}
 
 </div>
