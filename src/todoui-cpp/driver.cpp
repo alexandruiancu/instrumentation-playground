@@ -6,11 +6,6 @@
 #include "crow.h"
 #include "cpr/cpr.h"
 
-//template<typename T>
-//const T& unmove(T&& t) {
-//  return t;
-//}
-
 class LogHandler : public crow::ILogHandler
 {
 public:
@@ -25,25 +20,12 @@ int main(int argc, char *argv[]) {
   using ConfigValT = std::variant<std::string, uint32_t>;
   std::unordered_map<std::string, ConfigValT> app_config={
           {"FRONTEND_PORT", (uint32_t)5000},
-//          {"BACKEND_PORT", (uint32_t)8080},
-//          {"BACKEND_URL", "http://localhost{}/todos/"}
           {"BACKEND_URL", "http://localhost:8080/todos/"}
   };
 
   crow::logger::setLogLevel(crow::LogLevel::Debug);
   //crow::logger::setLogLevel(crow::LogLevel::Info);
   //crow::logger::setLogLevel(crow::LogLevel::Warning);
-
-  //// update BACKEND_URL
-  //if (app_config.contains("BACKEND_PORT")) {
-  //  CROW_LOG_DEBUG << std::format("Debug | config BACKEND_URL: {}", std::get<uint32_t>(app_config["BACKEND_PORT"]));
-//
-  //  app_config["BACKEND_URL"] = std::vformat(std::get<std::string>(app_config["BACKEND_URL"]),
-  //      std::make_format_args(
-  //        unmove(std::string(":") += std::get<uint32_t>(app_config["BACKEND_PORT"]))
-  //        )
-  //      );
-  //}
 
   // update with environment
   {
@@ -65,9 +47,23 @@ int main(int argc, char *argv[]) {
         std::get<std::string>(app_config["BACKEND_URL"])
       );
 
-      auto cpr_resp = cpr::Get(cpr::Url{std::get<std::string>(app_config["BACKEND_URL"])});
-      auto todos = crow::json::load(cpr_resp.text);
+      auto build_elements = [&](const crow::json::rvalue &json) {
+        std::vector<crow::mustache::context> v;
+        for(auto t : json){
+          crow::mustache::context c;
+          c["todo"] = t;
+          v.push_back(std::move(c));
+        }
+        return v;
+      };
 
+      crow::mustache::context todos;
+      auto cpr_resp = cpr::Get(cpr::Url{
+        std::get<std::string>(app_config["BACKEND_URL"])
+      });
+      todos["todos"] = crow::json::wvalue::list(
+        build_elements(crow::json::load(cpr_resp.text))
+      );
       return page.render(todos);
   });
 
