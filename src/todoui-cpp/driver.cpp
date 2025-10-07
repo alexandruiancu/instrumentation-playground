@@ -23,9 +23,9 @@ int main(int argc, char *argv[]) {
           {"BACKEND_URL", "http://localhost:8080/todos/"}
   };
 
-  crow::logger::setLogLevel(crow::LogLevel::Debug);
+  //crow::logger::setLogLevel(crow::LogLevel::Debug);
   //crow::logger::setLogLevel(crow::LogLevel::Info);
-  //crow::logger::setLogLevel(crow::LogLevel::Warning);
+  crow::logger::setLogLevel(crow::LogLevel::Warning);
 
   // update with environment
   {
@@ -69,58 +69,38 @@ int main(int argc, char *argv[]) {
 
   CROW_ROUTE(app, "/add")
   .methods("POST"_method)([&app_config](const crow::request& req){
-    crow::query_string qs = req.get_body_params();
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //Debug
-    std::ostringstream oss;
-    for (auto &key : qs.keys()) {
-      oss << key << ": " << qs.get(key) << "\n";
-    }
-    CROW_LOG_DEBUG << oss.str();
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     CROW_LOG_INFO << std::format("POST  {}/todos/{}",
         std::get<std::string>(app_config["BACKEND_URL"]), req.body
     );
 
-    auto cpr_resp = cpr::Post(
-        cpr::Url{std::get<std::string>(app_config["BACKEND_URL"])},
-        cpr::Body{req.body},
-        cpr::Header{{"Content-Type", "application/json"}}
-    );
-    CROW_LOG_DEBUG << "Add| CPR status code: " << cpr_resp.status_code << " CPR response: " << cpr_resp.text;
+    crow::query_string qs = req.get_body_params();
+    auto cpr_resp = cpr::Post(cpr::Url{
+      std::get<std::string>(app_config["BACKEND_URL"]) + qs.get("todo")
+    });
+    CROW_LOG_DEBUG << "Add| CPR status code: " 
+      << cpr_resp.status_code 
+      << " CPR response: " << cpr_resp.text;
 
     crow::response resp;
-    resp.redirect("/");
+    resp.moved("/");
     return resp;
   });
 
   CROW_ROUTE(app, "/delete")
   .methods("POST"_method)([&app_config](const crow::request& req){
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //Debug
-    crow::multipart::message multi_req(req);
-    std::ostringstream oss;
-    for (auto &[key, part] : multi_req.part_map) {
-      oss << key << ": " << part.body << "\n";
-    }
-    CROW_LOG_DEBUG << oss.str();
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    auto delete_todo = multi_req.get_part_by_name("todo");
     CROW_LOG_INFO << std::format("POST  {}/todos/{}",
-      std::get<std::string>(app_config["BACKEND_URL"]), delete_todo.body
+      std::get<std::string>(app_config["BACKEND_URL"]), req.body
     );
-    //TODO integrate CPR
-    auto cpr_resp = cpr::Post(
-        cpr::Url{std::get<std::string>(app_config["BACKEND_URL"])},
-        cpr::Body{delete_todo.body},
-        cpr::Header{{"Content-Type", "application/json"}}
-    );
-    CROW_LOG_DEBUG << "Delete| CPR status code: " << cpr_resp.status_code << " CPR response: " << cpr_resp.text;
+    
+    crow::query_string qs = req.get_body_params();
+    auto cpr_resp = cpr::Post(cpr::Url{
+      std::get<std::string>(app_config["BACKEND_URL"]) + qs.get("todo")
+    });
+    CROW_LOG_DEBUG << "Delete| CPR status code: " 
+      << cpr_resp.status_code << " CPR response: " << cpr_resp.text;
 
     crow::response resp;
-    resp.redirect("/");
+    resp.moved("/");
     return resp;
   });
 
