@@ -13,14 +13,12 @@ include("${instrumentation-playground_SOURCE_DIR}/cmake/grpc.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/protobuf.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/crow.cmake")
 include("${instrumentation-playground_SOURCE_DIR}/cmake/cpr.cmake")
+include("${instrumentation-playground_SOURCE_DIR}/cmake/zguide.cmake")
 
 set(include_DIR "${instrumentation-playground_SOURCE_DIR}/include")
 
 ########################################
 # zguide 
-#include C/zhelpers/h 
-#include C++/zhelpers/hpp)
-
 set(zguide_DIR "${instrumentation-playground_SOURCE_DIR}/../zguide")
 if(EXISTS "${zguide_DIR}")
   set(zguide_FOUND 1)
