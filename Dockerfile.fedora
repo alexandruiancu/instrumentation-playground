@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1.4
+
+#FROM fedora:latest AS base
+FROM fedora:rawhide AS base
+
+# Use BuildKit cache mounts for dnf to speed up builds
+#RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
+#    dnf install -y \
+#    ca-certificates \
+#    && dnf clean all \
+#    && rm -rf /var/cache/dnf
+RUN dnf clean all -y
+
+# Final minimal stage
+FROM fedora:latest
+
+# Copy only necessary files from base
+#COPY --from=base /etc/pki/tls /etc/pki/tls
+#COPY --from=base /etc/pki/ca-trust /etc/pki/ca-trust
+
+# Set the entry point to bash
+ENTRYPOINT ["/bin/bash"]

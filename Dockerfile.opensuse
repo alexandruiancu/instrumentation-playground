@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1.4
+
+FROM opensuse/tumbleweed:latest AS base
+# Final minimal stage
+FROM opensuse/tumbleweed:latest
+
+# Copy only necessary files from base
+COPY --from=base /etc/ssl/ /etc/ssl
+COPY --from=base /usr/lib/ca-certificates/ /usr/lib/ca-certificates
+
+# Set the entry point to bash
+ENTRYPOINT ["/bin/bash"]

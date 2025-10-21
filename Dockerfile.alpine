@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.4
+
+FROM alpine:latest AS base
+#
+# Use BuildKit cache mounts for dnf to speed up builds
+RUN apk add --no-cache \
+    ca-certificates
+
+# Final minimal stage
+FROM alpine:latest
+
+# Copy only necessary files from base
+COPY --from=base /etc/ssl/ /etc/ssl
+COPY --from=base /usr/share/ca-certificates/ /usr/share/ca-certificates
+
+# Set the entry point to bash
+ENTRYPOINT ["/bin/bash"]
